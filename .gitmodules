@@ -1,0 +1,6 @@
+[submodule "foxholewar-py"]
+	path = foxholewar-py
+	url = https://github.com/JonnyPtn/foxholewar-py
+[submodule "foxholewar"]
+	path = foxholewar
+	url = https://github.com/JonnyPtn/foxholewar
