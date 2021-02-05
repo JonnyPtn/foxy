@@ -7,6 +7,12 @@ import discord
 import os
 
 bot = commands.Bot(command_prefix = '!')
+mapCache = []
+
+def updateMapCache():
+    global mapCache
+    if not mapCache:
+        mapCache = foxholewar.getMapList()
 
 @bot.event
 async def on_ready():
@@ -27,11 +33,26 @@ async def info(ctx):
 
 @bot.command()
 async def maps(ctx):
-    maps = foxholewar.getMapList()
+    updateMapCache()
     message = "Maps: \n"
-    for map in maps:
-        message += map + "\n"
+    for map in mapCache:
+        message += map.prettyName + "\n"
     await ctx.send(message)
+
+@bot.command()
+async def report(ctx, *args):
+    mapName = "".join(args)
+
+    updateMapCache()
+
+    for map in mapCache:
+        if map.prettyName == mapName:
+            report = foxholewar.getReport(map)
+            message = "Day " + str(report.dayOfWar) + " of war in " + mapName + ": \n"
+            message += "Total enlistments: " + str(report.totalEnlistments) + "\n"
+            message += "Colonial casualties: " + str(report.colonialCasualties) + "\n"
+            message += "Warden casualties: " + str(report.wardenCasualties) + "\n"
+            await ctx.send(message)
     
 
 
