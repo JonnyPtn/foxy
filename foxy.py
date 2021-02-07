@@ -30,19 +30,21 @@ def updateMapCache():
 @bot.event
 async def on_ready():
     print('We have logged in as {0.user}'.format(bot))
+    await bot.change_presence(activity=discord.Game(name='Foxhole'))
 
 @bot.command()
 async def info(ctx):
     war = foxholewar.getCurrentWar()
-    message = "War # " + str(war.warNumber) + "\n"
-    conquestStartTime = int(war.conquestStartTime)
-    startTime = datetime.utcfromtimestamp(conquestStartTime / 1000)
-    message += "Conquest started: " + str(startTime) + "\n"
+    embed = discord.Embed(title="War # " + str(war.warNumber))
+
+    startTime = datetime.utcfromtimestamp(war.conquestStartTime / 1000)
+    embed.add_field(name="Conquest started", value=str(startTime.strftime("%A %d/%m/%y at %H%M")))
+
     if war.conquestEndTime is not None:
-        message += "On " + str(datetime.fromtimestamp(war.conquestEndTime)) + " the " + str(war.winner) + " won the war"
-    else:
-        message += str(war.requiredVictoryTowns) + " required victory towns"
-    await ctx.send(message)
+        endTime = datetime.utcfromtimestamp(war.conquestEndTime / 1000)
+        embed.add_field(name=str(war.winner) + " Won the war", value= str(endTime.strftime("%A %d/%m/%y at %H%M")))
+
+    await ctx.send(embed=embed)
 
 @bot.command()
 async def maps(ctx):
@@ -74,7 +76,7 @@ async def report(ctx, *args):
 
     for map in mapCache:
         if map.prettyName == mapName:
-            report = foxholewar.getReport(map)
+            report = map.getReport()
             message = "Day " + str(report.dayOfWar) + " of war in " + mapName + ": \n"
             message += "Total enlistments: " + str(report.totalEnlistments) + "\n"
             message += "Colonial casualties: " + str(report.colonialCasualties) + "\n"
