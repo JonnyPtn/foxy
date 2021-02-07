@@ -6,8 +6,21 @@ from foxholewar import foxholewar
 import discord
 import os
 
+from PIL import Image
+
 bot = commands.Bot(command_prefix = '!')
 mapCache = []
+
+def getImage(path):
+    # Use PIL to convert to png, because discord won't show TGA
+    # and save to a local cache
+    cachePath = ".imageCache/" + path + ".png"
+
+    if not os.path.isfile(cachePath):
+        image = Image.open(path)
+        image.save(cachePath, 'PNG')
+    
+    return open(cachePath, 'rb')
 
 def updateMapCache():
     global mapCache
@@ -40,9 +53,23 @@ async def maps(ctx):
     await ctx.send(message)
 
 @bot.command()
-async def report(ctx, *args):
-    mapName = "".join(args)
+async def map(ctx, *args):
+    mapName = " ".join(args)
+    updateMapCache()
 
+    for map in mapCache:
+        if map.prettyName == mapName:
+            embed = discord.Embed()
+            
+            with getImage("warapi/Images/Maps/Map" + map.rawName + ".TGA") as fp:
+                image = discord.File(fp, map.prettyName + ".png")
+                embed.set_image(url="attachment://" + map.prettyName + ".png")
+                await ctx.send(file=image, embed=embed)
+
+
+@bot.command()
+async def report(ctx, *args):
+    mapName = " ".join(args)
     updateMapCache()
 
     for map in mapCache:
@@ -53,7 +80,5 @@ async def report(ctx, *args):
             message += "Colonial casualties: " + str(report.colonialCasualties) + "\n"
             message += "Warden casualties: " + str(report.wardenCasualties) + "\n"
             await ctx.send(message)
-    
-
 
 bot.run(os.getenv('DISCORD_BOT_TOKEN'))

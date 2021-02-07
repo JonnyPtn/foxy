@@ -4,3 +4,6 @@
 [submodule "foxholewar"]
 	path = foxholewar
 	url = https://github.com/JonnyPtn/foxholewar
+[submodule "warapi"]
+	path = warapi
+	url = https://github.com/clapfoot/warapi
