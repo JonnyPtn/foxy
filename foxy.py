@@ -34,6 +34,8 @@ async def on_ready():
 
 @bot.command()
 async def info(ctx):
+    """Basic info for the current war"""
+
     war = foxholewar.getCurrentWar()
     embed = discord.Embed(title="War # " + str(war.warNumber))
 
@@ -48,29 +50,19 @@ async def info(ctx):
 
 @bot.command()
 async def maps(ctx):
+    """Get the list of maps"""
+
     updateMapCache()
     message = "Maps: \n"
     for map in mapCache:
         message += map.prettyName + "\n"
     await ctx.send(message)
 
-@bot.command()
-async def map(ctx, *args):
-    mapName = " ".join(args)
-    updateMapCache()
-
-    for map in mapCache:
-        if map.prettyName == mapName:
-            embed = discord.Embed()
-            
-            with getImage("warapi/Images/Maps/Map" + map.rawName + ".TGA") as fp:
-                image = discord.File(fp, map.prettyName + ".png")
-                embed.set_image(url="attachment://" + map.prettyName + ".png")
-                await ctx.send(file=image, embed=embed)
-
 
 @bot.command()
 async def report(ctx, *args):
+    """Get a report for the given map"""
+
     mapName = " ".join(args)
     updateMapCache()
 
