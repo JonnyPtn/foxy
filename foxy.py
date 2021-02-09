@@ -41,9 +41,10 @@ async def info(ctx):
     war = bot.client.getCurrentWar()
     embed = discord.Embed(title="War # " + str(war.warNumber))
 
-    startTime = datetime.utcfromtimestamp(war.conquestStartTime / 1000)
-    embed.add_field(name="Conquest started", value=str(
-        startTime.strftime("%A %d/%m/%y at %H%M")))
+    if war.conquestStartTime is not None:
+        startTime = datetime.utcfromtimestamp(war.conquestStartTime / 1000)
+        embed.add_field(name="Conquest started", value=str(
+            startTime.strftime("%A %d/%m/%y at %H%M")))
 
     if war.conquestEndTime is not None:
         endTime = datetime.utcfromtimestamp(war.conquestEndTime / 1000)
