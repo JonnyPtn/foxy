@@ -4,18 +4,20 @@ import logging
 import time
 import sys
 
+from dataclasses import dataclass
 from discord.ext import tasks, commands
 
 # Our db client running on the same host
 db = InfluxDBClient(host='localhost', port=8086)
 db.switch_database('foxy')
 
-
+@dataclass
 class Report:
-    totalColonialCasualties = 0
-    totalWardenCasualties = 0
-    lastHourColonialCasualties = 0
-    lastHourWardenCasualties = 0
+    totalColonialCasualties: int = 0
+    totalWardenCasualties: int = 0
+    lastHourColonialCasualties: int = 0
+    lastHourWardenCasualties: int = 0
+    version: int = 0
 
 
 class DataAccess(commands.Cog):
@@ -31,33 +33,39 @@ class DataAccess(commands.Cog):
         totalWardenCasualties = 0
         totalEnlistments = 0
 
-        maps = self.client.getMapList()
+        hasUpdated = False
+        maps = self.client.fetchMapList()
         for map in maps:
-            report = self.client.getReport(map)
+            report = self.client.fetchReport(map)
             totalColonialCasualties += report.colonialCasualties
             totalWardenCasualties += report.wardenCasualties
             totalEnlistments += report.totalEnlistments
+            currentReport = await self.generateWarReport(map.prettyName)
+            if not currentReport or currentReport.version < report.version:
+                hasUpdated = True
+                db.write_points([
+                    {
+                        "measurement": map.rawName,
+                        "fields": {
+                                "colonialCasualties": report.colonialCasualties,
+                                "wardenCasualties": report.wardenCasualties,
+                                "dayOfWar": report.dayOfWar,
+                                "totalEnlistments": report.totalEnlistments,
+                                "version": report.version
+                                }
+                    }
+                ])
+
+        if hasUpdated:
             db.write_points([
                 {
-                    "measurement": map.rawName,
+                    "measurement": "totals",
                     "fields": {
-                            "colonialCasualties": report.colonialCasualties,
-                            "wardenCasualties": report.wardenCasualties,
-                            "dayOfWar": report.dayOfWar,
-                            "totalEnlistments": report.totalEnlistments
-                            }
+                        "colonialCasualties": totalColonialCasualties,
+                        "wardenCasualties": totalWardenCasualties,
+                    }
                 }
             ])
-
-        db.write_points([
-            {
-                "measurement": "totals",
-                "fields": {
-                    "colonialCasualties": totalColonialCasualties,
-                    "wardenCasualties": totalWardenCasualties,
-                }
-            }
-        ])
         end = time.process_time()
         logging.log(logging.INFO, "War and map data updated, took " +
                     str(end - start) + " seconds")
@@ -67,9 +75,10 @@ class DataAccess(commands.Cog):
         if map in foxholewar.prettyMapNameToRaw:
             map = foxholewar.prettyMapNameToRaw[map]
         data = db.query(
-            'SELECT "colonialCasualties", "wardenCasualties" FROM "foxy"."autogen"."' + map + '" WHERE time > now() - 1h')
+            'SELECT "colonialCasualties", "wardenCasualties", "version" FROM "foxy"."autogen"."' + map + '" WHERE time > now() - 1h')
         if not data:
-            raise Exception('Faild to get data for map: ' + map)
+            logging.log(logging.ERROR, f"Failed to get war report from database for {map}")
+            return None
 
         report = Report()
         minColonialCasualties = sys.maxsize
@@ -84,6 +93,7 @@ class DataAccess(commands.Cog):
             minColonialCasualties = min(
                 minColonialCasualties, colonialCasualties)
             minWardenCasualties = min(minWardenCasualties, wardenCasualties)
+            report.version = max(report.version, point["version"])
 
         report.lastHourColonialCasualties = report.totalColonialCasualties - minColonialCasualties
         report.lastHourWardenCasualties = report.totalWardenCasualties - minWardenCasualties

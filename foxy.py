@@ -28,7 +28,7 @@ def getImage(path):
 
 @bot.event
 async def on_ready():
-    print('We have logged in as {0.user}'.format(bot))
+    print(f'We have logged in as {bot.user}')
     await bot.change_presence(activity=discord.Game(name='Foxhole'))
     bot.add_cog(data_access.DataAccess())
     bot.client = foxholewar.Client()
@@ -39,7 +39,7 @@ async def info(ctx):
     """Basic info for the current war"""
 
     war = bot.client.getCurrentWar()
-    embed = discord.Embed(title="War # " + str(war.warNumber))
+    embed = discord.Embed(title=f"War # {war.warNumber}")
 
     if war.conquestStartTime is not None:
         startTime = datetime.utcfromtimestamp(war.conquestStartTime / 1000)
@@ -72,7 +72,7 @@ async def report(ctx, *, arg=None):
     if not map:
         map = "totals"
     elif not foxholewar.isValidMapName(map):
-        await ctx.send("Unrecognised map name: " + map)
+        await ctx.send(f"Unrecognised map name: {map}")
         return
 
     report = await bot.cogs['DataAccess'].generateWarReport(map)
@@ -81,10 +81,10 @@ async def report(ctx, *, arg=None):
         title += " For " + arg
     embed = discord.Embed(title=title)
 
-    embed.add_field(name="Total casualties", value="Colonial: " + str(report.totalColonialCasualties) +
-                    "\nWarden: " + str(report.totalWardenCasualties), inline=True)
-    embed.add_field(name="Last hour casualties", value="Colonial: " + str(report.lastHourColonialCasualties) +
-                    "\nWarden: " + str(report.lastHourWardenCasualties), inline=True)
+    embed.add_field(name="Total casualties", value=f"Colonial: {report.totalColonialCasualties}" +
+                    f"\nWarden: {report.totalWardenCasualties}", inline=True)
+    embed.add_field(name="Last hour casualties", value=f"Colonial: {report.lastHourColonialCasualties}" + 
+                    f"\nWarden: {report.lastHourWardenCasualties}", inline=True)
     await ctx.send(embed=embed)
 
 bot.run(os.getenv('DISCORD_BOT_TOKEN'))
